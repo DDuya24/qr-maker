@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener/QR Code Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 기본적으로 에러 메시지 숨기기 */
+        #error-message, #shortened-error-message {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <p data-en="Enter Your Text or URL" 
+       data-ko="텍스트 또는 URL 입력" 
+       data-zh="输入您的文本或网址" 
+       data-ja="テキストまたはURLを入力してください" 
+       data-vi="Nhập văn bản hoặc URL của bạn">Enter Your Text or URL</p>
+
+    <input type="text" placeholder="Text or URL" id="qrText" 
+           data-en="Text or URL" 
+           data-ko="텍스트 또는 URL" 
+           data-zh="文本或网址" 
+           data-ja="テキストまたはURL" 
+           data-vi="Văn bản hoặc URL">
+
+    <!-- Error Message -->
+    <div id="error-message" data-en="Error! No text or URL." 
+         data-ko="오류! 텍스트 또는 URL이 없습니다." 
+         data-zh="错误！没有文本或网址。" 
+         data-ja="エラー！テキストまたはURLがありません。" 
+         data-vi="Lỗi! Không có văn bản hoặc URL.">Error! No text or URL.</div>
+    
+    <!-- Shortened URL Error Message -->
+    <div id="shortened-error-message" data-en="Error generating short link" 
+         data-ko="단축 링크 생성 오류" 
+         data-zh="生成短链接时出错" 
+         data-ja="短縮リンクの生成エラー" 
+         data-vi="Lỗi khi tạo liên kết ngắn">Error generating short link</div>
+
+    <div id="imgBox">
+        <img src="" id="qrImage">
+    </div>
+
+    <!-- Shortened URL Display -->
+    <div id="shortenedURL"></div>
+
+    <button onclick="generateQR()" 
+            data-en="Generate QR/Short Link" 
+            data-ko="QR/단축 링크 생성" 
+            data-zh="生成二维码/短链接" 
+            data-ja="QR/短縮リンクを生成" 
+            data-vi="Tạo mã QR/Liên kết ngắn">Generate QR/Short Link</button>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <span id="languageLabel">▼ English</span>
+        <div id="languageMenu" class="language-menu">
+            <div class="language-option" data-lang="en">English</div>
+            <div class="language-option" data-lang="zh">Chinese</div>
+            <div class="language-option" data-lang="ko">Korean</div>
+            <div class="language-option" data-lang="ja">Japanese</div>
+            <div class="language-option" data-lang="vi">Vietnamese</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Function to update text based on the selected language
+function updateTextContent(lang) {
+    document.querySelectorAll('[data-' + lang + ']').forEach(element => {
+        if (element.tagName === 'INPUT') {
+            element.placeholder = element.getAttribute('data-' + lang);
+        } else {
+            element.textContent = element.getAttribute('data-' + lang);
+        }
+    });
+    document.getElementById('languageLabel').textContent = `▼ ${document.querySelector(`.language-option[data-lang="${lang}"]`).textContent}`;
+}
+
+// JavaScript to handle language changes
+document.querySelectorAll('.language-option').forEach(option => {
+    option.addEventListener('click', function() {
+        const lang = this.dataset.lang;
+        updateTextContent(lang);
+        document.getElementById('languageMenu').classList.remove('show-menu');
+    });
+});
+
+// QR Code Generation Function
+function generateQR() {
+    let qrText = document.getElementById('qrText');
+    let qrImage = document.getElementById('qrImage');
+    let imgBox = document.getElementById('imgBox');
+    let errorMessage = document.getElementById('error-message');
+    let shortenedURL = document.getElementById('shortenedURL');
+    let shortenedErrorMessage = document.getElementById('shortened-error-message');
+
+    if (qrText.value.length > 0) {
+        // Generate QR Code
+        qrImage.src = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + encodeURIComponent(qrText.value);
+        imgBox.classList.add("show-img");
+        errorMessage.style.display = 'none'; // Hide error message
+        shortenedErrorMessage.style.display = 'none'; // Hide short link error message
+        shortenedURL.innerHTML = ''; // Clear previous short URL
+
+        // Generate Short Link using URL Shortener API
+        fetch('https://ulvis.net/api.php?url=' + encodeURIComponent(qrText.value) + '&custom=shortlink&private=1', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer wha an deu ssip'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.short_url) {
+                shortenedURL.innerHTML = `<a href="${data.short_url}" target="_blank">${data.short_url}</a>`;
+                shortenedErrorMessage.style.display = 'none'; // Hide short link error message if successful
+            } else {
+                // Show error message if no short_url in response
+                shortenedErrorMessage.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            // Show error message if fetch fails
+            shortenedErrorMessage.style.display = 'block';
+            console.error(err);
+        });
+
+    } else {
+        qrText.classList.add('error');
+        errorMessage.style.display = 'block'; // Show error message
+        shortenedURL.innerHTML = ''; // Clear previous short URL
+        shortenedErrorMessage.style.display = 'none'; // Hide short link error message
+        setTimeout(() => {
+            qrText.classList.remove('error');
+        }, 1000);
+    }
+}
+
+// Handle Enter Key
+document.getElementById('qrText').addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        generateQR();
+    }
+});
+
+// Toggle Language Menu
+document.getElementById('languageLabel').addEventListener('click', function() {
+    document.getElementById('languageMenu').classList.toggle('show-menu');
+});
+</script>
+</body>
+</html>
