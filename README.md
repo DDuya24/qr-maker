@@ -1,1 +1,1 @@
-# qr-maker
+# qr-maker don't steal
